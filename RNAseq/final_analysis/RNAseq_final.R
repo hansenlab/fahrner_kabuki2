@@ -52,24 +52,25 @@ dds.coll.filtered <- dds.coll[keep,]
 plot <- plotPCA(vst(dds.coll.filtered))
 plot + geom_label_repel(aes(label=gsub("_.*", "", colnames(dds.coll.filtered))), show.legend = FALSE)
 
-# find surrogate variables for batch effects using sva
-dds.coll.filtered.counts <- counts(dds.coll.filtered)
-mod <- model.matrix(~condition, colData(dds.coll.filtered))
-mod0 <- model.matrix(~1, colData(dds.coll.filtered))
-svseq <- svaseq(dds.coll.filtered.counts, mod, mod0)
-
-# append surrogate variables
-ddssva <- dds.coll.filtered
-ddssva$SV1 <- svseq$sv[,1]
-ddssva$SV2 <- svseq$sv[,2]
-ddssva$SV3 <- svseq$sv[,3]
-design(ddssva) <- formula(~SV1 + SV2 + SV3 + condition)
-#design(ddssva) <- formula(~SV1 + SV2 + condition)
+# # find surrogate variables for batch effects using sva
+# dds.coll.filtered.counts <- counts(dds.coll.filtered)
+# mod <- model.matrix(~condition, colData(dds.coll.filtered))
+# mod0 <- model.matrix(~1, colData(dds.coll.filtered))
+# svseq <- svaseq(dds.coll.filtered.counts, mod, mod0)
+# 
+# # append surrogate variables
+# ddssva <- dds.coll.filtered
+# ddssva$SV1 <- svseq$sv[,1]
+# ddssva$SV2 <- svseq$sv[,2]
+# ddssva$SV3 <- svseq$sv[,3]
+# design(ddssva) <- formula(~SV1 + SV2 + SV3 + condition)
+# #design(ddssva) <- formula(~SV1 + SV2 + condition)
 
 # DESeq2 call
-ddssva <- DESeq(ddssva)
-dds <- ddssva
-save(dds, file='dds_final.rda')
+#ddssva <- DESeq(ddssva)
+dds <- DESeq(dds.coll.filtered)
+#dds <- ddssva
+save(dds, file='dds_final_no-sva.rda')
 res <- results(dds)
 
 diffexp.subset <- as.data.frame(res[which(res$padj <0.1),])
@@ -87,3 +88,29 @@ diffexp.subset$ensembl_gene_id <- ensembl.id
 diffexp.subset <- merge(diffexp.subset, mgi, by='ensembl_gene_id')
 diffexp.subset <- diffexp.subset[order(diffexp.subset$log2FoldChange, decreasing=TRUE),]
 write.csv(diffexp.subset, file="diffexp_final.csv")
+
+
+### TEST SECTION
+load(file='dds_final.rda')
+dds_sva <- dds
+load(file='dds_final_no-sva.rda')
+dds_no.sva <- dds
+rm(dds)
+
+res_sva <- results(dds_sva)
+res_no.sva <- results(dds_no.sva)
+
+comp <- merge(as.data.frame(res_sva), as.data.frame(res_no.sva), by="row.names", suffixes=c('.sva','.no.sva'))
+
+setEPS()
+postscript('sva_comparison.eps')
+plot(comp$log2FoldChange.sva, comp$log2FoldChange.no.sva,
+     pch=19, cex=0.5,
+     #xlim=c(-8.5,3), ylim=c(-8.5,3),
+     xlab='log2FC, sva', ylab='log2FC, no sva', main='sva vs no sva, all genes')
+abline(a=0, b=1, col='red', lty=2)
+abline(h=0)
+abline(v=0)
+dev.off()
+
+
