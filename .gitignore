@@ -1,2 +1,9 @@
 extdata
+BigStuff/
+plots/
+temp/
+../.DS_Store
+../.RData
+../.Rapp.history
+../.Rhistory
 
