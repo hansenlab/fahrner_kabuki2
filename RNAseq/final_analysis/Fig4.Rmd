@@ -1,0 +1,319 @@
+---
+title: "Untitled"
+author: "Christine Gao"
+date: "7/11/2023"
+output: 
+  html_document:
+    code_folding: hide
+---
+```{r, include=FALSE}
+library(TxDb.Mmusculus.UCSC.mm10.ensGene)
+library(tximport)
+library(DESeq2)
+library(sva)
+library(biomaRt)
+library(ggplot2)
+library(ggrepel)
+library(tximeta)
+library(SummarizedExperiment)
+library(edgeR)
+library(limma)
+library(statmod)
+library(tidyverse)
+library(tripack)
+library(EnsDb.Mmusculus.v79)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(dplyr)
+library(scales)
+```
+
+```{r}
+get.ensembl <- function(x) {
+  edb_mouse <- EnsDb.Mmusculus.v79
+  proms_mouse <- promoters(edb_mouse, 
+                           filter = TxBiotypeFilter("protein_coding"), 
+                           upstream = 2000, 
+                           downstream = 2000, 
+                           columns = c("gene_name", "tx_id", "gene_id"))
+  genome(seqinfo(proms_mouse)) <- "mm10"
+  seqlevelsStyle(proms_mouse) <- "ucsc"
+  proms_mouse <- proms_mouse[which(seqnames(proms_mouse) %in% seqnames(Mmusculus)[1:21])]
+  proms_mouse$gene_name <- toupper(proms_mouse$gene_name)
+
+  x <- toupper(x)
+  x <- unique(x)
+  ensembl.ids <- as.data.frame(
+    unique(proms_mouse[which(proms_mouse$gene_name %in% x), c('gene_name','gene_id')]),
+    row.names=NULL)
+  ensembl.ids <- ensembl.ids[, c('gene_name','gene_id')] %>% distinct()
+  return(ensembl.ids)
+}
+```
+
+Function for making Wilcoxon rank sum test stat histograms FOR PAPER FIGURES.
+```{r}
+wilcox.hist.figure <- function(permutation, rank, pval, title, color){
+  par(mar=c(1.6,1,0,0), mgp=c(0.5,0.075,0))
+  hist(permutation, col = "gray60", lty = 0, 
+       breaks = 100, freq = FALSE, xlab = '', ylab='', yaxt = 'n',
+       main = '',
+       cex.main = 1.2, font.main = 1, 
+       # xlim = c(rank-50000, max(permutation)+0.05), xaxt = 'n')
+       xlim = c(min(permutation)-0.05, max(permutation)+0.05), xaxt = 'n')
+  axis(1, at = c(rank, round(quantile(permutation, c(0.01, 0.99)))), tck=-0.02, cex.axis = 0.7)
+  axis(2, at = c(0, 0.000009), tck=-0.02, cex.axis = 0.7)
+  mtext('Wilcoxon test stat', side=1, line=0.7, cex=0.7)
+  mtext('Density', side=2, line=0.3, adj=0.4, cex=0.7)
+  abline(v = rank, col = color, lwd = 2.5)
+  text(rank-12000, 0.000007,paste('p =', pval), adj=1, col = 'black', cex=0.7)
+  text(rank-12000, 0.0000079,'Neg. reg.', adj=1, col = 'black', cex=0.7)
+}
+```
+
+Function for making volcano plots FOR PAPER FIGURES.
+```{r}
+makeVolcanoPlot.figure <- 
+  function(DEgenes_df, lfc_cutoff, fdr, gene_ids, 
+           circ_ids, circ_names, jitter.x, jitter.y, ylim, color){
+  tab = data.frame(logFC = DEgenes_df$log2FoldChange, negLogPval = -log10(DEgenes_df$pvalue))
+  rownames(tab) <- rownames(DEgenes_df)
+  par(mar=c(1.4,1.3,1,0), mgp=c(0.5,0,0))
+  plot(tab[-which(rownames(tab) %in% gene_ids), ], pch = 16, cex = 0.5, 
+       xlab='',
+       ylab='',
+       axes = FALSE,
+       col = alpha("gray60",0.3), bty = 'l', 
+       xlim = c(-6, 6), 
+       ylim = c(0, ylim))
+  points(tab[gene_ids, ], pch = 16, cex = 0.5, col = color)
+  points(tab[circ_ids, ], pch = 1, cex = 1, col = 'black')
+  
+  axis(1, seq(-6,6, by=2), tck=-0.02, cex.axis=0.7)
+  axis(2, seq(0,10, by=2), tck=-0.02, cex.axis=0.7)
+  mtext(expression(log[2]~fold~change), side=1, line=0.6, cex=0.7)
+  mtext(expression(-log[10]~pvalue), side=2, line=0.6, cex=0.7)
+
+  text(tab[circ_ids, ]$logFC+0.5+jitter.x, tab[circ_ids, ]$negLogPval-0.25+jitter.y, 
+       adj=0, cex = 0.6, col='black',font=3,
+       labels=circ_names)
+ 
+  abline(h=-log10(fdr), col='red', lty=2, lwd=1)
+  mtext('-/- vs +/+', side=3, cex=0.7)
+}
+```
+
+Import samples, collapse rep and filter
+```{r}
+### BEGIN IMPORT
+samples <- read.csv('RNAseq-samples.csv')
+
+dir <- '~/Desktop/temp/Fahrner lab/Data/KS2/220506_NGS/fahrner_kabuki2/RNAseq/final_analysis/quants_final'
+files <- file.path(dir, paste(samples$Sample.ID, '_quant', sep=''), 'quant.sf')
+
+file.exists(files)
+coldata <- data.frame(files, names=samples$Sample.ID, condition=samples$Genotype, stringsAsFactors = FALSE)
+
+# import transcript abundances
+se <- tximeta(coldata)
+
+# summarize abundances to gene level
+gse <- summarizeToGene(se)
+
+# load SummarizedExperiment into DESeqDataSet
+dds <- DESeqDataSet(gse, design=~condition)
+### END IMPORT
+
+# collapse technical replicates
+dds$sample <- factor(gsub("_.*", "", colnames(dds)))
+dds.coll <- collapseReplicates(dds, dds$sample)
+stopifnot(all(rowSums(counts(dds[,which(dds$sample=="10-29")])) == counts(dds.coll[,1])))
+dds.coll.counts <- counts(dds.coll)
+
+# filter genes with low median counts
+keep <- rowMedians(counts(dds.coll)) > 10
+dds.coll.filtered <- dds.coll[keep,]
+```
+
+Fig 4E: PCA plot
+```{r}
+plot <- plotPCA(vst(dds.coll.filtered), returnData=TRUE)
+plot$group <- factor(plot$group, levels=c('WT', 'Mut'))
+group.colors <- c('#0F80FF','#FB0207')
+group.shapes <- c(16,17)
+
+# setEPS()
+# postscript('plots_final/pca.eps', width=2.15, height=1.57)
+ggplot(data = plot, aes(x = PC1, y = PC2, color=group, shape=group)) + 
+  geom_point(size = 2) + 
+  scale_shape_manual(values=group.shapes) +
+  scale_color_manual(values=group.colors) + 
+  xlab('PC1: 44% variance') +
+  ylab('PC2: 18% variance') +
+  theme_bw(base_size=8) +
+  theme(axis.text=element_text(size=8, color='black'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(color='black',
+                                    fill=NA,
+                                    size=1),
+        legend.position = 'none')
+# dev.off()
+```
+
+Fig 4F: Volcano
+```{r}
+load(file='BigStuff/dds_final_no-sva.rda')
+res <- results(dds)
+load(file='MGI.chon.rda')
+
+# setEPS()
+# postscript('plots_final/volcano_KS2_neg.eps', width=1.96, height=1.96)
+cairo_pdf('plots_final/volcano_KS2.pdf', width=1.96, height=1.96,
+          onefile=FALSE, fallback_resolution = 600)
+
+fdr <- res[which(res$padj>0.1 & is.na(res$padj)==FALSE),]
+fdr <- fdr[which(fdr$padj==min(fdr$padj)),]$pvalue[1]
+
+circ_ids <- c('ENSMUSG00000039462', 'ENSMUSG00000034612', 'ENSMUSG00000051910',
+              'ENSMUSG00000051920', 'ENSMUSG00000021390', 'ENSMUSG00000021367')
+circ_names <- c('Col10a1', 'Chst11', 'Sox6',
+                'Rspo2', 'Ogn', 'Edn1')
+jitter.x <- c(0,0,0,-3,0,-2.75)
+jitter.y <- c(0.4,0.2,-0.25,0.75,0,0)
+
+
+makeVolcanoPlot.figure(res, 
+                "none", fdr=0.005514137,
+                MGI.chon$gene_id, 
+                circ_ids, circ_names, jitter.x, jitter.y,
+                ylim=10, "deepskyblue")
+dev.off()
+```
+
+Fig 4G: Wilcoxon MGI.chon
+```{r}
+load(file='BigStuff/dds_final_no-sva.rda')
+res <- results(dds)
+# MGI.chon <- read.csv('GO_term_summary_20230711_123937.csv')
+# 
+# MGI.chon <- MGI.chon[which(str_detect(MGI.chon$Annotated.Term, 'negative', negate=TRUE)),]
+# MGI.chon <- unique(MGI.chon$Symbol)
+# 
+# MGI.chon <- get.ensembl(MGI.chon)
+# save(MGI.chon, file='MGI.chon.rda')
+load(file='MGI.chon.rda')
+
+rank.MGIchon <- wilcox.test(res$pvalue[which(rownames(res) %in% MGI.chon$gene_id)],
+                            res$pvalue[-which(rownames(res) %in% MGI.chon$gene_id)])$statistic
+
+# length1 <- length(which(rownames(res) %in% MGI.chon$gene_id))
+# 
+# permutation.rank.MGIchon <- replicate(10000, {
+#   indices <- sample(1:length(rownames(res)), length1)
+#   wilcox.test(res$pvalue[indices], res$pvalue[-indices])$statistic
+#   })
+# 
+# save(permutation.rank.MGIchon, file='permutation.rank.MGIchon.rda')
+# prop.table(table(permutation.rank.MGIchon<rank.MGIchon))
+
+load(file='permutation.rank.MGIchon.rda')
+pval.MGIchon <- unname(prop.table(table(permutation.rank.MGIchon<rank.MGIchon))[2])
+
+# setEPS()
+# postscript('plots_final/wilcox_MGIchon.eps', width=1.96, height=1.96)
+wilcox.hist.figure(permutation.rank.MGIchon, 
+                   rank.MGIchon, 
+                   pval.MGIchon, 
+                   'MGI cartilage dev', 
+                   'deepskyblue')
+# dev.off()
+```
+
+Supp Fig 6
+```{r}
+setEPS()
+postscript(file='plots_final/density_log2FC.eps', width=2.35, height=1.77)
+par(mar=c(1.7,1.1,0.2,0), mgp=c(0.5,0.075,0))
+plot.new()
+plot.window(xlim=c(-4,4), ylim=c(0,1.3))
+lines(density(res[-which(rownames(res) %in% MGI.chon$gene_id),]$log2FoldChange, 
+              from=-4, to=4, bw=0.2, cut=0),
+      col='black', lwd=2)
+lines(density(res[which(rownames(res) %in% MGI.chon$gene_id),]$log2FoldChange, 
+              from=-4, to=4, bw=0.2, cut=0),
+      col='deepskyblue', lwd=2)
+axis(1, at=c(-4,-2,0,2,4), tck=-0.02, cex.axis=0.7)
+axis(2, at=c(0,1.3), tck=-0.02, cex.axis=0.7, pos=-4)
+mtext('log2FC', side=1, line=0.7, cex=0.7)
+mtext('Density', side=2, line=0.3, cex=0.7)
+legend('topright', legend=c('MGI chon','Other genes'),
+       col=c('deepskyblue','black'), lty=1, lwd=2, cex=0.7,
+       box.lty=0)
+dev.off()
+```
+
+Supp Fig 8A
+```{r}
+growth <- read.csv(file='GO_term_summary_20240311_081956.csv')
+growth <- growth[which(growth$Annotated.Term=='positive regulation of cell growth' |
+                       growth$Annotated.Term=='positive regulation of chondrocyte hypertrophy'),]
+growth <- growth[,c('Symbol')]
+MGI.growth <- get.ensembl(growth)
+save(MGI.growth, file='MGI.growth.rda')
+write.csv(MGI.growth, file='MGI.growth.csv')
+
+load(file='BigStuff/dds_final_no-sva.rda')
+res <- results(dds)
+
+rank.MGIgrowth <- wilcox.test(res$pvalue[which(rownames(res) %in% MGI.growth$gene_id)],
+                            res$pvalue[-which(rownames(res) %in% MGI.growth$gene_id)])$statistic
+length1 <- length(which(rownames(res) %in% MGI.growth$gene_id))
+
+permutation.rank.MGIgrowth <- replicate(10000, {
+  indices <- sample(1:length(rownames(res)), length1)
+  wilcox.test(res$pvalue[indices], res$pvalue[-indices])$statistic
+  })
+
+save(permutation.rank.MGIgrowth, file='permutation.rank.MGIgrowth.rda')
+pval.MGIgrowth <- prop.table(table(permutation.rank.MGIgrowth<rank.MGIgrowth))[2]
+
+setEPS()
+postscript('plots_final/wilcox_MGIgrowth.eps', width=1.96, height=1.96)
+wilcox.hist.figure(permutation.rank.MGIgrowth, 
+                   rank.MGIgrowth, 
+                   pval.MGIgrowth, 
+                   'MGI positive growth', 
+                   'mediumorchid1')
+dev.off()
+```
+
+Supp Fig 8B
+```{r}
+growth.neg <- read.csv(file='GO_term_summary_20240312_142021.csv')
+growth.neg <- growth.neg[which(growth.neg$Annotated.Term=='negative regulation of cell growth'),]
+growth.neg <- growth.neg[,c('Symbol')]
+MGI.growth.neg <- get.ensembl(growth.neg)
+save(MGI.growth.neg, file='MGI.growth.neg.rda')
+write.csv(MGI.growth.neg, file='MGI.growth.neg.csv')
+
+rank.MGIgrowth.neg <- wilcox.test(res$pvalue[which(rownames(res) %in% MGI.growth.neg$gene_id)],
+                            res$pvalue[-which(rownames(res) %in% MGI.growth.neg$gene_id)])$statistic
+length1 <- length(which(rownames(res) %in% MGI.growth.neg$gene_id))
+
+permutation.rank.MGIgrowth.neg <- replicate(10000, {
+  indices <- sample(1:length(rownames(res)), length1)
+  wilcox.test(res$pvalue[indices], res$pvalue[-indices])$statistic
+  })
+
+save(permutation.rank.MGIgrowth.neg, file='permutation.rank.MGIgrowth.neg.rda')
+pval.MGIgrowth.neg <- prop.table(table(permutation.rank.MGIgrowth.neg<rank.MGIgrowth.neg))[2]
+
+setEPS()
+postscript('plots_final/wilcox_MGIgrowth.neg.eps', width=1.96, height=1.96)
+wilcox.hist.figure(permutation.rank.MGIgrowth.neg, 
+                   rank.MGIgrowth.neg, 
+                   pval.MGIgrowth.neg, 
+                   'MGI negative growth', 
+                   'green3')
+dev.off()
+```

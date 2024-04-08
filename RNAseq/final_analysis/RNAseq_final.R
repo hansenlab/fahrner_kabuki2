@@ -36,10 +36,10 @@ dds <- DESeqDataSet(gse, design=~condition)
 ### BEGIN ANALYSIS 
 plot <- plotPCA(vst(dds))
 
-setEPS()
+# setEPS()
 postscript('221016_KS2_PCA-uncollapsed.eps')
 plot + geom_label_repel(aes(label=gsub("_.*", "", colnames(dds))), show.legend = FALSE)
-dev.off()
+# dev.off()
 
 # collapse technical replicates
 dds$sample <- factor(gsub("_.*", "", colnames(dds)))
@@ -54,10 +54,10 @@ dds.coll.filtered <- dds.coll[keep,]
 #dds.coll.filtered$condition <- relevel(dds.coll.filtered$condition, ref="WT")
 plot <- plotPCA(vst(dds.coll.filtered), returnData=TRUE)
 
-setEPS()
+# setEPS()
 postscript('221016_KS2_PCA-collapsed.eps', width=7, height=4)
 plot + geom_label_repel(aes(label=gsub("_.*", "", colnames(dds.coll.filtered))), show.legend = FALSE)
-dev.off()
+# dev.off()
 
 # find surrogate variables for batch effects using sva
 dds.coll.filtered$condition <- relevel(dds.coll.filtered$condition, ref="WT")
@@ -98,7 +98,10 @@ mgi <- getBM(attributes=c('ensembl_gene_id','mgi_symbol','mgi_description'),
 diffexp.subset$ensembl_gene_id <- ensembl.id
 diffexp.subset <- merge(diffexp.subset, mgi, by='ensembl_gene_id')
 diffexp.subset <- diffexp.subset[order(diffexp.subset$log2FoldChange, decreasing=TRUE),]
-write.csv(diffexp.subset, file="diffexp_final_no-sva.csv")
+load(file='MGI.chon.rda')
+diffexp.subset$chondrocyte <- 
+  ifelse(toupper(diffexp.subset$mgi_symbol) %in% MGI.chon$gene_name, 'yes','no')
+write.csv(diffexp.subset, file="diffexp_final_no-sva_chon.csv")
 
 
 ### TEST SECTION

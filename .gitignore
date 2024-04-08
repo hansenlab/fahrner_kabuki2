@@ -1,5 +1,6 @@
 extdata
 BigStuff/
+!BigStuff/dds_KS1.rda
 plots/
 temp/
 ../.DS_Store
