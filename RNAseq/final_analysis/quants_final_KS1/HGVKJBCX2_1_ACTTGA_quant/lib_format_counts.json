@@ -1,0 +1,22 @@
+{
+    "read_files": "[ HGVKJBCX2_1_ACTTGA_1.fastq.gz ]",
+    "expected_format": "U",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 9098094,
+    "num_assigned_fragments": 9098094,
+    "num_frags_with_concordant_consistent_mappings": 9193043,
+    "num_frags_with_inconsistent_or_orphan_mappings": 0,
+    "strand_mapping_bias": 0.4995006550061824,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 0,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 0,
+    "SF": 4591931,
+    "SR": 4601112,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
