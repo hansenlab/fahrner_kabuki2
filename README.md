@@ -1,6 +1,6 @@
 # fahrner_kabuki
 
-Code and associated files for analysis of KS2 RNAseq and ChIPseq data.
+Code and associated files for analysis of KS2 RNAseq data.
 
 The `RNAseq/final_analysis` directory contains scripts and data objects for Fig 4 and Supp Fig 6 and 8.
   - `RNAseq_final.R`: Imports the quant files from Salmon (available on GEO accession number GSE262539), summarizes to transcript level using `tximeta` and performs differential analysis with `DESeq2`
