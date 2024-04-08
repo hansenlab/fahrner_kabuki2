@@ -1,0 +1,22 @@
+{
+    "read_files": "[ IUID_96-9_D7_S15_L001_R1_001.fastq.gz, IUID_96-9_D7_S15_L001_R2_001.fastq.gz]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 19860211,
+    "num_assigned_fragments": 19860211,
+    "num_frags_with_concordant_consistent_mappings": 19178427,
+    "num_frags_with_inconsistent_or_orphan_mappings": 845361,
+    "strand_mapping_bias": 0.5001005035501608,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 9591141,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 9587286,
+    "SF": 406770,
+    "SR": 438591,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

@@ -1,0 +1,64 @@
+[2023-06-18 03:18:04.427] [jointLog] [info] setting maxHashResizeThreads to 8
+[2023-06-18 03:18:04.427] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2023-06-18 03:18:04.427] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2023-06-18 03:18:04.427] [jointLog] [info] Setting consensusSlack to selective-alignment default of 0.35.
+[2023-06-18 03:18:04.427] [jointLog] [info] parsing read library format
+[2023-06-18 03:18:04.427] [jointLog] [info] There is 1 library.
+[2023-06-18 03:18:04.499] [jointLog] [info] Loading pufferfish index
+[2023-06-18 03:18:04.500] [jointLog] [info] Loading dense pufferfish index.
+[2023-06-18 03:18:30.419] [jointLog] [info] done
+[2023-06-18 03:18:30.479] [jointLog] [info] Index contained 117,201 targets
+[2023-06-18 03:18:31.742] [jointLog] [info] Number of decoys : 66
+[2023-06-18 03:18:31.742] [jointLog] [info] First decoy index : 117,096 
+[2023-06-18 03:18:32.764] [jointLog] [info] Automatically detected most likely library type as IU
+
+[2023-06-18 03:21:51.957] [fileLog] [info] 
+At end of round 0
+==================
+Observed 27360799 total fragments (27360799 in most recent round)
+
+[2023-06-18 03:21:51.956] [jointLog] [info] Computed 306,714 rich equivalence classes for further processing
+[2023-06-18 03:21:51.956] [jointLog] [info] Counted 24,008,290 total reads in the equivalence classes 
+[2023-06-18 03:21:51.962] [jointLog] [info] Number of mappings discarded because of alignment score : 9,360,671
+[2023-06-18 03:21:51.962] [jointLog] [info] Number of fragments entirely discarded because of alignment score : 1,328,702
+[2023-06-18 03:21:51.962] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 731,669
+[2023-06-18 03:21:51.962] [jointLog] [info] Number of fragments discarded because they have only dovetail (discordant) mappings to valid targets : 473,221
+[2023-06-18 03:21:51.962] [jointLog] [info] Mapping rate = 87.747%
+
+[2023-06-18 03:21:51.962] [jointLog] [info] finished quantifyLibrary()
+[2023-06-18 03:21:52.000] [jointLog] [info] Starting optimizer
+[2023-06-18 03:21:52.070] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2023-06-18 03:21:52.086] [jointLog] [info] iteration = 0 | max rel diff. = 10448.9
+[2023-06-18 03:21:52.242] [jointLog] [info] iteration 11, adjusting effective lengths to account for biases
+[2023-06-18 03:22:28.237] [jointLog] [info] Computed expected counts (for bias correction)
+[2023-06-18 03:22:28.237] [jointLog] [info] processed bias for 0.0% of the transcripts
+[2023-06-18 03:22:30.461] [jointLog] [info] processed bias for 10.0% of the transcripts
+[2023-06-18 03:22:32.718] [jointLog] [info] processed bias for 20.0% of the transcripts
+[2023-06-18 03:22:35.094] [jointLog] [info] processed bias for 30.0% of the transcripts
+[2023-06-18 03:22:37.485] [jointLog] [info] processed bias for 40.0% of the transcripts
+[2023-06-18 03:22:39.800] [jointLog] [info] processed bias for 50.0% of the transcripts
+[2023-06-18 03:22:42.160] [jointLog] [info] processed bias for 60.0% of the transcripts
+[2023-06-18 03:22:44.491] [jointLog] [info] processed bias for 70.0% of the transcripts
+[2023-06-18 03:22:46.258] [jointLog] [info] processed bias for 80.0% of the transcripts
+[2023-06-18 03:22:46.930] [jointLog] [info] processed bias for 90.0% of the transcripts
+[2023-06-18 03:22:49.096] [jointLog] [info] processed bias for 100.0% of the transcripts
+[2023-06-18 03:22:49.103] [jointLog] [info] processed bias for 100.0% of the transcripts
+[2023-06-18 03:22:50.253] [jointLog] [info] iteration = 100 | max rel diff. = 17.8263
+[2023-06-18 03:22:51.521] [jointLog] [info] iteration = 200 | max rel diff. = 10.1534
+[2023-06-18 03:22:52.918] [jointLog] [info] iteration = 300 | max rel diff. = 2.03505
+[2023-06-18 03:22:54.453] [jointLog] [info] iteration = 400 | max rel diff. = 1.69136
+[2023-06-18 03:22:55.944] [jointLog] [info] iteration = 500 | max rel diff. = 0.912806
+[2023-06-18 03:22:57.457] [jointLog] [info] iteration = 600 | max rel diff. = 0.615937
+[2023-06-18 03:22:58.981] [jointLog] [info] iteration = 700 | max rel diff. = 0.0517025
+[2023-06-18 03:23:00.479] [jointLog] [info] iteration = 800 | max rel diff. = 0.164799
+[2023-06-18 03:23:01.906] [jointLog] [info] iteration = 900 | max rel diff. = 0.0582565
+[2023-06-18 03:23:03.340] [jointLog] [info] iteration = 1,000 | max rel diff. = 3.45683
+[2023-06-18 03:23:04.827] [jointLog] [info] iteration = 1,100 | max rel diff. = 0.112104
+[2023-06-18 03:23:06.276] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.366992
+[2023-06-18 03:23:07.692] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.151806
+[2023-06-18 03:23:09.130] [jointLog] [info] iteration = 1,400 | max rel diff. = 5.014
+[2023-06-18 03:23:10.565] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.0661839
+[2023-06-18 03:23:11.849] [jointLog] [info] iteration = 1,593 | max rel diff. = 0.0069132
+[2023-06-18 03:23:11.858] [jointLog] [info] Finished optimizer
+[2023-06-18 03:23:11.858] [jointLog] [info] writing output 
+

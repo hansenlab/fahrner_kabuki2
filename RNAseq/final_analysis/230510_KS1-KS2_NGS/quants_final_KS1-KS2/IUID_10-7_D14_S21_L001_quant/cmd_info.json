@@ -1,0 +1,12 @@
+{
+    "salmon_version": "1.9.0",
+    "index": "/users/cgao/fahrner_kabuki2/extdata/RNAseq/GRCm38_cdna_index_decoy-aware",
+    "libType": "A",
+    "mates1": "IUID_10-7_D14_S21_L001_R1_001.fastq.gz",
+    "mates2": "IUID_10-7_D14_S21_L001_R2_001.fastq.gz",
+    "threads": "8",
+    "validateMappings": [],
+    "gcBias": [],
+    "output": "quants_final_KS1-KS2/IUID_10-7_D14_S21_L001_quant",
+    "auxDir": "aux_info"
+}
